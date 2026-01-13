@@ -1,0 +1,134 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// ============================================
+// User Model
+// ============================================
+model User {
+  id                    String    @id @default(cuid())
+  email                 String    @unique
+  passwordHash          String    @map("password_hash")
+  phoneNumber           String?   @map("phone_number")
+  fullName              String    @map("full_name")
+  
+  // Check-in settings
+  checkInFrequencyHours Int       @default(24) @map("check_in_frequency_hours")
+  gracePeriodHours      Int       @default(2) @map("grace_period_hours")
+  lastCheckInAt         DateTime? @map("last_check_in_at")
+  
+  // Subscription
+  subscriptionStatus    String @default("FREE") @map("subscription_status")
+  
+  // Account status
+  isActive              Boolean   @default(true) @map("is_active")
+  emailVerified         Boolean   @default(false) @map("email_verified")
+  
+  // Timestamps
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+  
+  // Relations
+  emergencyContacts     EmergencyContact[]
+  checkIns              CheckIn[]
+  alerts                Alert[]
+  subscriptions         Subscription[]
+  
+  @@map("users")
+}
+
+// ============================================
+// Emergency Contact Model
+// ============================================
+model EmergencyContact {
+  id                  String   @id @default(cuid())
+  userId              String
+  
+  name                String
+  phoneNumber         String?  @map("phone_number")
+  email               String?
+  relationship        String?
+  priorityOrder       Int      @map("priority_order")
+  notificationMethod  String @default("EMAIL") @map("notification_method")
+  
+  // Timestamps
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("emergency_contacts")
+}
+
+// ============================================
+// Check-in Model
+// ============================================
+model CheckIn {
+  id              String   @id @default(cuid())
+  userId          String
+  
+  checkedInAt     DateTime @default(now()) @map("checked_in_at")
+  ipAddress       String?  @map("ip_address")
+  userAgent       String?  @map("user_agent")
+  location        String?  // JSON as string for SQLite
+  
+  // Relations
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("check_ins")
+}
+
+// ============================================
+// Alert Model
+// ============================================
+model Alert {
+  id                  String      @id @default(cuid())
+  userId              String
+  
+  triggeredAt         DateTime    @default(now()) @map("triggered_at")
+  status              String @default("PENDING")
+  contactsNotified    String?     @map("contacts_notified") // JSON as string
+  
+  resolvedAt          DateTime?   @map("resolved_at")
+  resolutionNote      String?     @map("resolution_note")
+  
+  // Relations
+  user                User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("alerts")
+}
+
+// ============================================
+// Subscription Model
+// ============================================
+model Subscription {
+  id                    String             @id @default(cuid())
+  userId                String
+  
+  planType              String   @map("plan_type")
+  status                String
+  
+  stripeSubscriptionId  String?            @unique @map("stripe_subscription_id")
+  stripeCustomerId      String?            @map("stripe_customer_id")
+  
+  amount                Float
+  currency              String             @default("USD")
+  
+  startedAt             DateTime           @default(now()) @map("started_at")
+  expiresAt             DateTime?          @map("expires_at")
+  cancelledAt           DateTime?          @map("cancelled_at")
+  
+  // Relations
+  user                  User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("subscriptions")
+}
