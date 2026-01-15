@@ -12,10 +12,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CheckinService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../prisma/prisma.service");
+const events_gateway_1 = require("../gateways/events.gateway");
+const notifications_service_1 = require("../notifications/notifications.service");
 let CheckinService = class CheckinService {
     prisma;
-    constructor(prisma) {
+    eventsGateway;
+    notificationService;
+    constructor(prisma, eventsGateway, notificationService) {
         this.prisma = prisma;
+        this.eventsGateway = eventsGateway;
+        this.notificationService = notificationService;
     }
     async recordCheckIn(userId, ipAddress, userAgent) {
         const user = await this.prisma.user.update({
@@ -31,7 +37,7 @@ let CheckinService = class CheckinService {
                 userAgent,
             },
         });
-        await this.prisma.alert.updateMany({
+        const cancelledAlerts = await this.prisma.alert.updateMany({
             where: {
                 userId,
                 status: 'PENDING',
@@ -43,10 +49,26 @@ let CheckinService = class CheckinService {
             },
         });
         const streak = await this.calculateStreak(userId);
+        const nextCheckInDue = this.calculateNextCheckInDue(user.checkInFrequencyHours, user.gracePeriodHours);
+        this.eventsGateway.emitToRoom(this.getUserTopic(userId), 'checkin:recorded', {
+            checkInId: checkIn.id,
+            userId,
+            timestamp: checkIn.checkedInAt,
+            streak,
+            nextCheckInDue,
+            isOverdue: false,
+        });
+        if (cancelledAlerts.count > 0) {
+            this.eventsGateway.emitToRoom(this.getUserTopic(userId), 'alert:cancelled', {
+                userId,
+                cancelledAlertCount: cancelledAlerts.count,
+                reason: 'User checked in',
+            });
+        }
         return {
             checkIn,
             streak,
-            nextCheckInDue: this.calculateNextCheckInDue(user.checkInFrequencyHours, user.gracePeriodHours),
+            nextCheckInDue,
         };
     }
     async getCheckInHistory(userId, limit = 30) {
@@ -75,7 +97,7 @@ let CheckinService = class CheckinService {
         const lastCheckIn = user.lastCheckInAt || new Date(0);
         const hoursSinceLastCheckIn = (now.getTime() - lastCheckIn.getTime()) / (1000 * 60 * 60);
         const isOverdue = hoursSinceLastCheckIn >
-            (user.checkInFrequencyHours + user.gracePeriodHours);
+            user.checkInFrequencyHours + user.gracePeriodHours;
         return {
             lastCheckInAt: user.lastCheckInAt,
             hoursSinceLastCheckIn: Math.floor(hoursSinceLastCheckIn),
@@ -134,15 +156,20 @@ let CheckinService = class CheckinService {
                 return false;
             }
             const hoursSinceLastCheckIn = (now.getTime() - user.lastCheckInAt.getTime()) / (1000 * 60 * 60);
-            return hoursSinceLastCheckIn >
-                (user.checkInFrequencyHours + user.gracePeriodHours);
+            return (hoursSinceLastCheckIn >
+                user.checkInFrequencyHours + user.gracePeriodHours);
         });
         return missedUsers;
+    }
+    getUserTopic(userId) {
+        return `user_${userId}`;
     }
 };
 exports.CheckinService = CheckinService;
 exports.CheckinService = CheckinService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        events_gateway_1.EventsGateway,
+        notifications_service_1.NotificationService])
 ], CheckinService);
 //# sourceMappingURL=checkin.service.js.map

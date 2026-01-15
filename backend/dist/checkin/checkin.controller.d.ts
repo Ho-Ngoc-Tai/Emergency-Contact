@@ -5,11 +5,11 @@ export declare class CheckinController {
     checkIn(req: any): Promise<{
         checkIn: {
             id: string;
+            userId: string;
             checkedInAt: Date;
             ipAddress: string | null;
             userAgent: string | null;
             location: string | null;
-            userId: string;
         };
         streak: number;
         nextCheckInDue: Date;
@@ -25,10 +25,10 @@ export declare class CheckinController {
     }>;
     getHistory(req: any, limit?: string): Promise<{
         id: string;
+        userId: string;
         checkedInAt: Date;
         ipAddress: string | null;
         userAgent: string | null;
         location: string | null;
-        userId: string;
     }[]>;
 }

@@ -11,12 +11,14 @@ const common_1 = require("@nestjs/common");
 const checkin_service_1 = require("./checkin.service");
 const checkin_controller_1 = require("./checkin.controller");
 const prisma_module_1 = require("../prisma/prisma.module");
+const events_module_1 = require("../gateways/events.module");
+const notifications_module_1 = require("../notifications/notifications.module");
 let CheckinModule = class CheckinModule {
 };
 exports.CheckinModule = CheckinModule;
 exports.CheckinModule = CheckinModule = __decorate([
     (0, common_1.Module)({
-        imports: [prisma_module_1.PrismaModule],
+        imports: [prisma_module_1.PrismaModule, events_module_1.EventsModule, notifications_module_1.NotificationsModule],
         controllers: [checkin_controller_1.CheckinController],
         providers: [checkin_service_1.CheckinService],
         exports: [checkin_service_1.CheckinService],

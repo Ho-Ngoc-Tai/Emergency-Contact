@@ -5,6 +5,10 @@ import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { CheckinModule } from './checkin/checkin.module';
+import { EventsModule } from './gateways/events.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { EmergencyModule } from './emergency/emergency.module';
+import { TasksModule } from './tasks/tasks.module';
 
 @Module({
   imports: [
@@ -14,9 +18,12 @@ import { CheckinModule } from './checkin/checkin.module';
     PrismaModule,
     AuthModule,
     CheckinModule,
+    EventsModule,
+    NotificationsModule,
+    EmergencyModule,
+    TasksModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule { }
-
+export class AppModule {}

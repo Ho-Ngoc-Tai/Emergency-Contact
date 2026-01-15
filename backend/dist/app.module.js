@@ -14,6 +14,10 @@ const app_service_1 = require("./app.service");
 const prisma_module_1 = require("./prisma/prisma.module");
 const auth_module_1 = require("./auth/auth.module");
 const checkin_module_1 = require("./checkin/checkin.module");
+const events_module_1 = require("./gateways/events.module");
+const notifications_module_1 = require("./notifications/notifications.module");
+const emergency_module_1 = require("./emergency/emergency.module");
+const tasks_module_1 = require("./tasks/tasks.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -26,6 +30,10 @@ exports.AppModule = AppModule = __decorate([
             prisma_module_1.PrismaModule,
             auth_module_1.AuthModule,
             checkin_module_1.CheckinModule,
+            events_module_1.EventsModule,
+            notifications_module_1.NotificationsModule,
+            emergency_module_1.EmergencyModule,
+            tasks_module_1.TasksModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

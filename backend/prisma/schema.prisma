@@ -6,15 +6,15 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
 }
 
 // ============================================
 // User Model
 // ============================================
 model User {
-  id                    String    @id @default(cuid())
+  id                    String    @id @default(auto()) @map("_id") @db.ObjectId
   email                 String    @unique
   passwordHash          String    @map("password_hash")
   phoneNumber           String?   @map("phone_number")
@@ -23,10 +23,34 @@ model User {
   // Check-in settings
   checkInFrequencyHours Int       @default(24) @map("check_in_frequency_hours")
   gracePeriodHours      Int       @default(2) @map("grace_period_hours")
+  gracePeriodMinutes    Int       @default(10) @map("grace_period_minutes")
   lastCheckInAt         DateTime? @map("last_check_in_at")
+  
+  // State Machine
+  checkinStatus         String    @default("SAFE") @map("checkin_status")
+  // SAFE, WARNING, PENDING_ALERT, TRIGGERED
+  alertTriggeredAt      DateTime? @map("alert_triggered_at")
   
   // Subscription
   subscriptionStatus    String @default("FREE") @map("subscription_status")
+  subscriptionActive    Boolean   @default(false) @map("subscription_active")
+  subscriptionExpiresAt DateTime? @map("subscription_expires_at")
+  lastPaymentDate       DateTime? @map("last_payment_date")
+  
+  // Notification settings
+  notificationsEnabled  Boolean   @default(true) @map("notifications_enabled")
+  lastNotificationSent  DateTime? @map("last_notification_sent")
+  fcmToken              String?   @map("fcm_token")
+  
+  // Emergency settings
+  emergencyCallEnabled  Boolean   @default(false) @map("emergency_call_enabled")
+  lastEmergencyTrigger  DateTime? @map("last_emergency_trigger")
+  lastKnownLocation     String?   @map("last_known_location")
+  
+  // Heartbeat Monitoring
+  lastHeartbeatAt       DateTime? @map("last_heartbeat_at")
+  appVersion            String?   @map("app_version")
+  deviceInfo            String?   @map("device_info")
   
   // Account status
   isActive              Boolean   @default(true) @map("is_active")
@@ -41,6 +65,8 @@ model User {
   checkIns              CheckIn[]
   alerts                Alert[]
   subscriptions         Subscription[]
+  notificationQueue     NotificationQueue[]
+  alertConfig           AlertConfig?
   
   @@map("users")
 }
@@ -49,8 +75,8 @@ model User {
 // Emergency Contact Model
 // ============================================
 model EmergencyContact {
-  id                  String   @id @default(cuid())
-  userId              String
+  id                  String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId              String   @db.ObjectId
   
   name                String
   phoneNumber         String?  @map("phone_number")
@@ -73,8 +99,8 @@ model EmergencyContact {
 // Check-in Model
 // ============================================
 model CheckIn {
-  id              String   @id @default(cuid())
-  userId          String
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String   @db.ObjectId
   
   checkedInAt     DateTime @default(now()) @map("checked_in_at")
   ipAddress       String?  @map("ip_address")
@@ -91,8 +117,8 @@ model CheckIn {
 // Alert Model
 // ============================================
 model Alert {
-  id                  String      @id @default(cuid())
-  userId              String
+  id                  String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId              String      @db.ObjectId
   
   triggeredAt         DateTime    @default(now()) @map("triggered_at")
   status              String @default("PENDING")
@@ -111,8 +137,8 @@ model Alert {
 // Subscription Model
 // ============================================
 model Subscription {
-  id                    String             @id @default(cuid())
-  userId                String
+  id                    String             @id @default(auto()) @map("_id") @db.ObjectId
+  userId                String             @db.ObjectId
   
   planType              String   @map("plan_type")
   status                String
@@ -131,4 +157,51 @@ model Subscription {
   user                  User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   
   @@map("subscriptions")
+}
+
+// ============================================
+// Notification Queue Model
+// ============================================
+model NotificationQueue {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  
+  type        String   // REMINDER, WARNING, EMERGENCY
+  message     String
+  scheduledAt DateTime @map("scheduled_at")
+  sentAt      DateTime? @map("sent_at")
+  status      String   @default("PENDING") // PENDING, SENT, FAILED
+  
+  // Metadata
+  metadata    String?  // JSON as string
+  
+  // Timestamps
+  createdAt   DateTime @default(now()) @map("created_at")
+  
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("notification_queue")
+  @@index([scheduledAt, status])
+}
+
+// ============================================
+// Alert Config Model
+// ============================================
+model AlertConfig {
+  id                  String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId              String   @unique @db.ObjectId
+  
+  timeoutHours        Int      @default(24) @map("timeout_hours")
+  warningThreshold    Int      @default(1) @map("warning_threshold") // hours before timeout
+  gracePeriodMinutes  Int      @default(10) @map("grace_period_minutes")
+  
+  // Timestamps
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+  
+  // Relations
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("alert_configs")
 }

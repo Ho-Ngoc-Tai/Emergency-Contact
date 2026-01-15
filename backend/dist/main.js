@@ -17,7 +17,7 @@ async function bootstrap() {
     });
     const config = new swagger_1.DocumentBuilder()
         .setTitle('LifeSignal API')
-        .setDescription('Dead Man\'s Switch - Daily Check-in System API')
+        .setDescription("Dead Man's Switch - Daily Check-in System API")
         .setVersion('1.0')
         .addBearerAuth()
         .build();

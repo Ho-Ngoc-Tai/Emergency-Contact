@@ -24,7 +24,7 @@ async function bootstrap() {
   // Swagger configuration
   const config = new DocumentBuilder()
     .setTitle('LifeSignal API')
-    .setDescription('Dead Man\'s Switch - Daily Check-in System API')
+    .setDescription("Dead Man's Switch - Daily Check-in System API")
     .setVersion('1.0')
     .addBearerAuth()
     .build();
@@ -37,4 +37,3 @@ async function bootstrap() {
   console.log(`📚 Swagger docs available at http://localhost:${port}/api`);
 }
 bootstrap();
-
