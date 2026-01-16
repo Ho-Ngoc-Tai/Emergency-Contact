@@ -2,9 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 export enum NotificationType {
-  REMINDER = 'REMINDER',     // T-2h
-  WARNING = 'WARNING',       // T-1h
-  EMERGENCY = 'EMERGENCY',   // T-15m
+  REMINDER = 'REMINDER',
+  WARNING = 'WARNING',
+  EMERGENCY = 'EMERGENCY',
 }
 
 @Injectable()

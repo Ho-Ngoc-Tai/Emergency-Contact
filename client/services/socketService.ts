@@ -8,11 +8,12 @@ class SocketService {
 
   connect(userId: string) {
     if (this.socket?.connected) {
-      console.log('Socket already connected');
+      console.log('🔌 Socket already connected');
       return;
     }
 
     this.userId = userId;
+    console.log('🔌 [SOCKET] Connecting...', { userId, url: SOCKET_URL, path: SOCKET_PATH });
 
     this.socket = io(SOCKET_URL, {
       path: SOCKET_PATH,
@@ -37,14 +38,17 @@ class SocketService {
   private subscribeToUserTopic() {
     if (!this.socket || !this.userId) return;
 
+    const topic = `user_${this.userId}`;
+    console.log('📡 [SOCKET] Subscribing to topic:', topic);
+
     this.socket.emit(
       'subscribe',
-      { topic: `user_${this.userId}`, type: 'private' },
+      { topic, type: 'private' },
       (response: { success: boolean; topic?: string; message?: string }) => {
         if (response.success) {
-          console.log('✅ Subscribed to:', response.topic);
+          console.log('✅ [SOCKET] Subscribed to:', response.topic);
         } else {
-          console.error('❌ Subscribe failed:', response.message);
+          console.error('❌ [SOCKET] Subscribe failed:', response.message);
         }
       }
     );
@@ -60,11 +64,19 @@ class SocketService {
 
   // Event listeners
   onCheckInRecorded(callback: (data: CheckInRecordedEvent) => void) {
-    this.socket?.on('checkin:recorded', callback);
+    console.log('👂 [SOCKET] Listening for checkin:recorded events');
+    this.socket?.on('checkin:recorded', (data) => {
+      console.log('🎉 [SOCKET] Event received: checkin:recorded', data);
+      callback(data);
+    });
   }
 
   onAlertCancelled(callback: (data: AlertCancelledEvent) => void) {
-    this.socket?.on('alert:cancelled', callback);
+    console.log('👂 [SOCKET] Listening for alert:cancelled events');
+    this.socket?.on('alert:cancelled', (data) => {
+      console.log('🎉 [SOCKET] Event received: alert:cancelled', data);
+      callback(data);
+    });
   }
 
   // Remove listeners

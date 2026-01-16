@@ -28,7 +28,7 @@ function SocketListener() {
       socketService.offCheckInRecorded();
       socketService.offAlertCancelled();
     };
-  }, [user, dispatch]);
+  }, [user]);
 
   return null;
 }
